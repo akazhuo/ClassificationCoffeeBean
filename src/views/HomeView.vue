@@ -6,13 +6,13 @@
     <div class="content-container">
       <div id="classification">
         <div class="row-text">烘焙度</div>
-        <div class="row-text title" :style="{ color: classifyColor(classification) }">{{ classifyCN(classification) }}</div>
+        <el-skeleton :rows="1" v-if="predicting" />
+        <div v-else class="row-text title" :style="{ color: classifyColor(classification) }">{{ classifyCN(classification) }}</div>
       </div>
       <div id="predict">
         <div class="row-text">预测值</div>
-        <template v-if="predictionArray.length > 0">
-          <div class="row-text" v-for="(p, index) in ['深', '绿', '浅', '中']" :key="index">{{ p }}: {{ predictionArray[index] }}%</div>
-        </template>
+        <el-skeleton :rows="4" v-if="predicting" />
+        <div v-else class="row-text" v-for="(p, index) in ['深', '绿', '浅', '中']" :key="index">{{ p }}: {{ predictionArray[index] }}%</div>
       </div>
     </div>
     <div class="footer">
@@ -50,7 +50,8 @@ export default {
       predictionArray: [],
       img: null,
       ast: null,
-      coffeeBeanStore: {}
+      coffeeBeanStore: {},
+      predicting: false,
     };
   },
   async mounted() {
@@ -85,6 +86,8 @@ export default {
       const file = event.target.files[0];
       if (file) {
         try {
+          // 加载态
+          this.predicting = true;
           await this.loadImage(file);
           const tensorXt = this.preprocessImage();
           if (this.model) {
@@ -104,13 +107,17 @@ export default {
             this.coffeeBeanStore.setPredictionArray(this.predictionArray)
             console.log(this.predictionArray)
 
+
+            this.predicting = false;
             // 释放资源
             tensorXt.dispose();
             prediction.dispose();
           } else {
+            this.predicting = false;
             console.error('Model is not loaded yet.');
           }
         } catch (error) {
+          this.predicting = false;
           console.error('Error processing the image:', error);
         }
       }
